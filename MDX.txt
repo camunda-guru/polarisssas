@@ -1,0 +1,706 @@
+SELECT
+{ [Dim Customer].[City].CHILDREN } ON COLUMNS,
+{ [Product].[Size].CHILDREN } ON ROWS
+FROM [Adventure Works DW2008];
+
+SELECT  
+    { [Measures].[Dim Customer Count] } ON COLUMNS,  
+    { [Dim Date].[Fiscal].[Fiscal Year],   
+        [Dim Date].[Fiscal].[Fiscal Year] } ON ROWS  
+FROM [Sales DW] ;
+
+SELECT  
+    { [Measures].[Dim Customer Count] } ON COLUMNS,  
+    { [Dim Date].[Year] } ON ROWS  
+FROM [Sales DW] ;
+
+Select [Dim Customer].[Customer Name].[Customer Name] on 0 
+From [Sales DW];
+SELECT  
+    { [Measures].[Sales Amount],   
+        [Measures].[Tax Amount] } ON 0,  
+    { [Date].[Fiscal].[Fiscal Year].&[2002],   
+        [Date].[Fiscal].[Fiscal Year].&[2003] } ON 1  
+FROM [Adventure Works]  
+WHERE ( [Sales Territory].[Southwest] ) 
+
+
+SELECT [Date].[Calendar Year].[CY 2005] on 0
+FROM [Adventure Works];
+
+SELECT [Date].[Calendar Year].FirstChild on 0
+FROM [Adventure Works];
+
+--Defaultmember
+SELECT [Date].[Calendar Year].defaultmember on 0
+FROM [Adventure Works];
+
+--
+SELECT {([Measures].[Reseller Sales Amount] ,[Date].[Calendar Year].[CY 2006])
+, ([Measures].[Reseller Sales Amount],[Date].[Calendar Year].[CY 2007])
+}.Item(1) ON COLUMNS 
+FROM [Adventure Works];
+
+SELECT {([Measures].[Reseller Sales Amount] ,[Date].[Calendar Year].[CY 2006])
+, ([Measures].[Reseller Sales Amount],[Date].[Calendar Year].[CY 2007])
+} ON COLUMNS 
+FROM [Adventure Works];
+
+SELECT {[Calendar Quarter].[Q1 CY 2005]:[Calendar Quarter].[Q4 CY 2007]}  ON 0
+FROM [Adventure Works];
+
+SELECT {
+   [Calendar Quarter].[Q1 CY 2006], 
+   [Calendar Quarter].[Q2 CY 2006], 
+   [Calendar Quarter].[Q3 CY 2006], 
+   [Calendar Quarter].[Q4 CY 2006]
+   } ON 0
+FROM [Adventure Works];
+
+-- Named set
+WITH SET [EUROPE] AS '{[Customer].[Country].&[France],
+[Customer].[Country].&[Germany],
+[Customer].[Country].&[United Kingdom]}' 
+SELECT Measures.[Internet Sales Amount] ON COLUMNS,
+[EUROPE] ON ROWS
+FROM [Adventure Works];
+
+--Named Set and Set operators
+WITH SET [EUROPE] AS '{[Customer].[Country].&[France]} + {[Customer].[Country].&[United Kingdom]}' 
+SELECT Measures.[Internet Sales Amount] ON COLUMNS,
+[EUROPE] ON ROWS
+FROM [Adventure Works];
+
+--Named Set and Set operators
+WITH SET [EUROPE] AS '{[Customer].[Country].&[France]} + {[Customer].[Country].&[United Kingdom]}' 
+SELECT Measures.[Internet Sales Amount] ON COLUMNS,
+[EUROPE] ON ROWS
+FROM [Adventure Works];
+
+--Named Set and Set operators (Cross Product)
+WITH SET [EUROPE] AS '{[Customer].[Country].&[France], [Customer].[Country].&[United Kingdom]} *
+{[Product].[Product Line].&[M],[Product].[Product Line].&[R]}' 
+SELECT Measures.[Internet Sales Amount] ON COLUMNS,
+[EUROPE] ON ROWS
+FROM [Adventure Works];
+
+-- Calculated members
+WITH MEMBER Measures.[profit] AS [Measures].[Internet Sales Amount] - [Measures].[Internet Standard Product Cost]
+SELECT measures.profit ON COLUMNS,
+[Customer].[Country].MEMBERS ON ROWS
+FROM [Adventure Works];
+
+
+with member [Measures].[PCT Discount] AS '[Measures].[Discount Amount]/[Measures].[Reseller Sales Amount]', FORMAT_STRING = 'Percent' 
+set Top10SellingProducts as 'topcount([Product].[Model Name].children, 10, [Measures].[Reseller Sales Amount])' 
+//set Preferred10Products as ' 
+//{[Product].[Model Name].&[Mountain-200], 
+//[Product].[Model Name].&[Road-250], 
+//[Product].[Model Name].&[Mountain-100], 
+//[Product].[Model Name].&[Road-650], 
+//[Product].[Model Name].&[Touring-1000], 
+//[Product].[Model Name].&[Road-550-W], 
+//[Product].[Model Name].&[Road-350-W], 
+//[Product].[Model Name].&[HL Mountain Frame], 
+//[Product].[Model Name].&[Road-150], 
+//[Product].[Model Name].&[Touring-3000] 
+//}' 
+select {[Measures].[Reseller Sales Amount], [Measures].[Discount Amount], [Measures].[PCT Discount]} on 0, 
+Top10SellingProducts on 1 
+from [Adventure Works]; 
+
+
+-- Combined named set and calculated set.
+-- order products based on the internet Sales Amount and returns the sales amount of each product along with the rank.
+WITH
+SET [Product Order] AS 'Order([Product].[Product Line].MEMBERS, [Internet Sales Amount], BDESC)'
+MEMBER [Measures].[Product Rank] AS 'RANK([Product].[Product Line].CURRENTMEMBER, [Product Order])'
+SELECT {[Product Rank], [Sales Amount]} ON COLUMNS,
+[Product Order] ON ROWS
+FROM [Adventure Works];
+
+--each half year is analyzed along with the cumulative sales for the whole year
+WITH MEMBER Measures.[Cumulative Sales] AS 'Sum(YTD(), [Internet Sales Amount])'
+SELECT {Measures.[Internet Sales Amount], Measures.[Cumulative Sales]} ON 0,
+[Date].[Calendar].[Calendar Semester].MEMBERS ON 1
+FROM [Adventure Works];
+
+--each month is analyzed along with the cumulative sales for the whole year
+WITH MEMBER Measures.[Cumulative Sales] AS 'Sum(YTD(), [Internet Sales Amount])'
+SELECT {Measures.[Internet Sales Amount], Measures.[Cumulative Sales]} ON 0,
+[Date].[Calendar].[Month].MEMBERS ON 1
+FROM [Adventure Works];
+
+--9,061,000.58
+SELECT [Measures].[Internet Sales Amount] ON COLUMNS
+FROM [Adventure Works]
+WHERE [Customer].[Country].[Australia];
+
+--$11,038,845.45
+SELECT [Measures].[Internet Sales Amount] ON COLUMNS
+FROM [Adventure Works]
+WHERE {[Customer].[Country].[Australia],
+[Customer].[Country].[Canada]};
+
+--$9,770,899.74
+SELECT [Measures].[Internet Sales Amount] ON COLUMNS
+FROM  [Adventure Works]
+WHERE [Date].[Calendar Year].&[2008];
+
+--
+SELECT
+    { [Measures].[Sales Amount], [Measures].[Tax Amount] } ON COLUMNS,
+    { [Date].[Fiscal].[Fiscal Year].&[2007], [Date].[Fiscal].[Fiscal Year].&[2008] } ON ROWS
+FROM [Adventure Works]
+WHERE ( [Sales Territory].[Southwest] );
+
+SELECT CROSSJOIN({[Date].[Calendar Year].ALLMEMBERS},{[Measures].[Internet Sales Amount]})
+FROM [Adventure Works];
+
+-- Crossjoin, Allmembers (normale dim?), Children (igv een hierarchie?)
+SELECT  
+CROSSJOIN({[Date].[Calendar Year].ALLMEMBERS},{[Measures].[Internet Sales Amount]}) ON AXIS (0),
+ {[Product].[Product Categories].CHILDREN} ON AXIS (1)
+FROM [Adventure Works];
+
+-- : = Range operator
+SELECT  CROSSJOIN({[Measures].ALLMEMBERS}, {[Date].[Calendar Year].[CY 2005]: [Date].[Calendar Year].[CY 2008]}) ON AXIS (0),
+CROSSJOIN({[Product].[Product Categories].CHILDREN},[Customer].[Country].[Country].MEMBERS) ON AXIS (1)
+FROM [Adventure Works];
+
+--MDX Functions
+WITH MEMBER measures.LocationName AS [Customer].[Country].CurrentMember.Name
+SELECT measures.LocationName ON COLUMNS,
+Customer.Country.members on ROWS
+FROM [Adventure Works];
+
+WITH MEMBER measures.User AS USERNAME
+SELECT measures.User ON 0
+FROM [Adventure Works];
+
+--SET Functions
+SELECT Measures.[Internet Sales Amount] ON COLUMNS,
+FILTER(CROSSJOIN({Product.[Product Line].[Product Line].MEMBERS},
+{[Customer].[Country].Members}), [Internet Sales Amount] >200000) ON ROWS
+FROM [Adventure Works];
+
+--Memberfunction (ParallelPeriod)
+SELECT ParallelPeriod ([Date].[Calendar].[Calendar Quarter]
+, 3
+, [Date].[Calendar].[Month].[October 2007])
+ON 0
+FROM [Adventure Works];
+   
+SELECT ParallelPeriod ([Date].[Calendar].[Calendar Quarter]
+, 1
+, [Date].[Calendar].[Month].[November 2007])
+ON 0
+FROM [Adventure Works]; 
+
+--------------------------------
+
+/* Author: Mubin M. Shaikh
+Basic need: SQL Server 2008 or 2008 R2 Standard or Enterprise Edition with Adventure works cube 2008 r2
+*/
+--Type Your MDX Query Here and run against Adventure Works  Cube
+
+--Select Dimension.Member on column 
+--From OLAPCubeName
+
+Select [Dim Customer].[Customer].[Customer] on 0 
+From [Adventure Works DW2008];
+--OR
+Select [Customer].[Customer].[Customer] on columns 
+From [Adventure Works];
+--Retrieve Internet Average Sales Amount as per Product Category
+Select [Measures].[Internet Average Sales Amount] on Columns,
+[Product].[Category].children on Rows
+From [Adventure Works];
+
+-- writing tuple
+select {[Date].[CY 2005], [Date].[CY 2006] , [Date].[CY 2007]} on rows,
+[Measures].[Internet Sales Amount] on columns from
+[Adventure Works];
+--Writing Set
+select {[Date].[CY 2008] : [Date].[CY 2005]}  on rows,
+[Measures].[Internet Sales Amount] on columns from
+[Adventure Works];
+
+
+-- Using Cross Join symbol *
+select {[Product].[Category].children*[Product].[Subcategory].children * [Product].[Product].children } on rows,
+[Measures].[Internet Sales Amount] on columns from
+[Adventure Works];
+
+--Using Non Empty to remove Null values from result set
+Select 
+non empty CrossJoin([Product].[Category].children,[Product].[Subcategory].children,
+[Product].[Product].children) on rows,
+{[Measures].[Internet Sales Amount],[Measures].[Internet Freight Cost]} on columns 
+from [Adventure Works];
+
+-- View Aggregation value of Total Internet  Sales for All Periods
+select [Measures].[Internet Sales Amount] on columns,
+[Date].[Month of Year] on rows
+from [Adventure Works];
+
+
+-- View Aggregated value of Internet sales Amount Monthwise with [All].
+select [Measures].[Internet Sales Amount] on columns,
+[Date].[Month of Year].members on rows
+from [Adventure Works];
+
+-- View Aggregated value of Internet sales Amount day name wise with [All].
+select [Measures].[Internet Sales Amount] on columns,
+[Date].[Day Name].members on rows
+from [Adventure Works];
+
+-- Internet sales Amount Monthwise  without Allperiods/ exclude [All].
+select [Measures].[Internet Sales Amount] on columns,
+[Date].[Month of Year].Children on rows
+from [Adventure Works];
+
+-- Internet sales Amount Monthwise e.g all January, February etc..
+select [Measures].[Internet Sales Amount] on columns,
+[Date].[Month of Year].children on rows
+from [Adventure Works];
+
+
+-- Internet sales Amount Year & Monthwise e.g [All], 2005-January, 2005-February etc with All Periods..
+select [Measures].[Internet Sales Amount] on columns,
+[Date].[Calendar Year].members*[Date].[Month of Year].members on rows
+from [Adventure Works];
+
+--Internet sales Amount Year & Monthwise (avoid All Member [All] and use dimension members from hierarchy )
+select [Measures].[Internet Sales Amount] on columns,
+{[Date].[Calendar Year].children*[Date].[Month of Year].children } on rows
+from [Adventure Works];
+
+-- Display only those whose sales amount >473389.16 using filter
+select [Measures].[Internet Sales Amount] on columns,
+filter({[Date].[Calendar Year].children*[Date].[Month of Year].children },([Measures].[Internet Sales Amount]>473389.16)) on rows
+from [Adventure Works];
+
+select [Measures].[Internet Sales Amount] on columns,
+filter({[Date].[Calendar Year].children*[Date].[Month of Year].children*[Customer].[Customer].[Customer].members },([Measures].[Internet Sales Amount]>489.16)) on rows
+from [Adventure Works];
+
+//
+//select [Measures].[Internet Sales Amount] on columns,
+//filter({[Date].[Calendar Year].children*[Date].[Month of Year].children*[Customer].[Customer].[Customer].members },([Customer].[Customer].&[27663])) on rows
+//from [Adventure Works];
+
+select [Measures].[Internet Sales Amount] on columns,
+[Date].[Calendar].members*[Date].[Month of Year].members*[Customer].[Customer].[Customer].members  on rows
+from [Adventure Works];
+
+--show all customers who has purchase amount >5000 in any month over all years
+
+select [Measures].[Internet Sales Amount] on columns,
+filter({[Date].[Calendar Year].children*[Date].[Month of Year].children*[Customer].[Customer].[Customer].members },([Measures].[Internet Sales Amount]>5000)) on rows
+from [Adventure Works];
+
+--year 2007 and sales amount>4000, but can't use hirarchy year on axis
+
+select [Measures].[Internet Sales Amount] on columns,
+filter({[Date].[Month of Year].children*[Customer].[Customer].[Customer].members },([Measures].[Internet Sales Amount]>4000)) on rows
+from [Adventure Works]
+where [Date].[Calendar Year].[CY 2007]
+;
+
+--Year 2007 and sales amount>4000, we can use hirarchy year on axis 
+select [Measures].[Internet Sales Amount] on columns,
+filter({[Date].[Calendar Year].children*[Date].[Month of Year].children*[Customer].[Customer].[Customer].members },([Measures].[Internet Sales Amount]>4000)) on rows
+from 
+(select [Date].[Calendar Year].[CY 2007] on columns from [Adventure Works]);
+
+--Compare All March and April Sales for all years
+
+select [Measures].[Internet Sales Amount] on columns,
+[Date].[Calendar].children*{[Date].[Month of Year].[March],[Date].[Month of Year].[April] } on rows
+from [Adventure Works];
+
+-- Remove empty cells from measures or remove all those month which does not have any sales
+select  [Measures].[Internet Sales Amount] on columns,
+nonempty ([Date].[Calendar].children*{[Date].[Month of Year].[March],[Date].[Month of Year].[April] } )on rows
+from [Adventure Works];
+
+--Sales value of first Month 
+
+select  [Measures].[Internet Sales Amount] on columns,
+{[Date].[Calendar Year].children*openingPeriod([Date].[Calendar].[Month])} on rows
+from [Adventure Works];
+
+--Opening period(Starting Month) of particular year
+select  [Measures].[Internet Sales Amount] on columns,
+{[Date].[Calendar Year].children*OpeningPeriod([Date].[Calendar].[Month],[Date].[Calendar].[Calendar Year].&[2005])} on rows
+from [Adventure Works];
+
+-- Calculate Profit margin (InternetSalesAmount-InternetTotalProductCost) using member
+with member Profitmargin as
+([Measures].[Internet Sales Amount]-[Measures].[Internet Total Product Cost])
+select Profitmargin on columns,
+[Date].[Calendar].[Date].ALLMEMBERS on rows 
+from [Adventure Works];
+
+-- Last 6 Month Details of Sales for year 2007
+select [Measures].[Internet Sales Amount]  on columns,
+LastPeriods(6,[Date].[Calendar].[Month].[December 2007]) on rows
+from [Adventure Works] ;
+
+-- sort data in descending order of sales amount for Last 6 Month Details of Sales for year 2007
+select [Measures].[Internet Sales Amount]  on columns,
+order(LastPeriods(6,[Date].[Calendar].[Month].[December 2007]),[Measures].[Internet Sales Amount],Desc)  on rows
+from [Adventure Works] ;
+
+--find out top/highest 5 sales amount
+
+select  [Measures].[Internet Sales Amount] on columns,
+TopCount([Date].[Calendar].[Month],5,[Measures].[Internet Sales Amount] ) on rows
+from [Adventure Works];
+
+--find out bottom/lowest 5 sales amount, avoid empty months using nonempty function
+select  [Measures].[Internet Sales Amount] on columns,
+(BottomCount(nonempty( [Date].[Calendar].[Month]),5,[Measures].[Internet Sales Amount] ) ) on rows
+from [Adventure Works];
+
+-- findout 100 customer who has done highest purchase
+
+select  [Measures].[Internet Sales Amount] on columns,
+TopCount({[Date].[Calendar].[Month]*[Customer].[Customer].[Customer]} ,100,[Measures].[Internet Sales Amount] ) on rows
+from [Adventure Works];
+
+-- Findout top 10 customer who has done highest purchase of the august 2008
+
+select  [Measures].[Internet Sales Amount] on columns,
+TopCount(nonempty([Customer].[Customer].[Customer] ),10,[Measures].[Internet Sales Amount] ) on rows
+from [Adventure Works]
+where 
+[Date].[Calendar].[Month].[July 2008];
+
+--using properties of the dimension on axis
+
+select {} 
+on columns,
+{[Customer].[Customer Geography].[State-Province].members } dimension properties 
+member_Caption  on rows 
+from [Adventure Works];
+
+--creation of custom member as per the requirement
+
+WITH MEMBER  [MEASURES].[T2] AS 
+[Customer].[State-Province].CURRENTMEMBER.UNIQUE_NAME
+MEMBER  [MEASURES].[T3] AS 
+[Customer].[State-Province].CURRENTMEMBER.MEMBER_cAPTION
+MEMBER  [MEASURES].[T4] AS 
+[Customer].[State-Province].CURRENTMEMBER.UNIQUENAME
+select {[MEASURES].[T2] ,[MEASURES].[T3] ,[MEASURES].[T4] }
+on 0,
+[Customer].[Customer Geography].[State-Province].members DIMENSION PROPERTIES UNIQUE_NAME,MEMBER_KEY  on 1 
+from [Adventure Works];
+
+
+
+WITH MEMBER  [MEASURES].[T1] AS 
+[Employee].[Employees].CURRENTMEMBER.UNIQUE_NAME
+SELECT [MEASURES].[T1] ON 0
+,
+[Employee].[Employees].MEMBERS DIMENSION PROPERTIES UNIQUE_NAME,MEMBER_KEY ON 1 FROM [Adventure Works];
+
+
+  --custom calculated testmember to do sum/aggregate upto specified month
+with member testmember as 
+Aggregate
+(
+YTD([Date].[Calendar].[Month].&[2006]&[2]), [Measures].[Internet Sales Amount]
+)
+select {testmember,[Measures].[Internet Sales Amount]} on columns,
+--existing places filter on members of month for specified year
+existing
+(
+    [Date].[Calendar].[Month].MEMBERS ,[Date].[Calendar Year].&[2006]
+
+)
+ on rows
+
+FROM [Adventure Works];
+
+// using periods to date for same purpose for doing some upto specified month or for doing running total as per different combination
+with member testmember as 
+Aggregate
+(
+PeriodsToDate([Date].[Calendar].[Calendar Year]), [Measures].[Internet Sales Amount]
+--PeriodsToDate( [Date].[Calendar].[Calendar Year] ,[Date].[Calendar].[Month].&[2006]&[3] ),[Internet Sales Amount]
+)
+select {testmember,[Measures].[Internet Sales Amount]} on columns,
+
+existing
+(
+    [Date].[Calendar].[Month].MEMBERS ,[Date].[Calendar Year].&[2006]
+
+)
+ on rows
+
+FROM [Adventure Works];
+
+
+
+SELECT
+  {
+    [Measures].[Internet Sales Amount]
+  } ON 0
+,
+[Date].[Date].[Date] on 1
+FROM [Adventure Works]
+where  [Date].[Calendar].[Month].&[2006]&[3]
+;
+
+SELECT
+  {
+    [Measures].[Internet Sales Amount]
+  } ON 0
+,
+[Date].[Date].[Date] on 1
+FROM [Adventure Works]
+where  [Date].[Calendar].[Month].&[2006]&[3]
+;
+
+SELECT
+[Measures].[Internet Sales Amount]   ON columns
+,{
+    LastPeriods(15     ,[Date].[Date].&[20050715] )
+    
+  } ON rows
+FROM [Adventure Works]
+
+;
+
+
+WITH
+  MEMBER one AS
+    Aggregate
+    (
+      YTD([Date].[Calendar].[Month].&[2006]&[2])  , [Measures].[Internet Sales Amount]
+    )
+  MEMBER two AS
+    Aggregate
+    (
+      PeriodsToDate
+      (   [Date].[Calendar].[Calendar Year] ,[Date].[Calendar].[Month].&[2006]&[3]  ) ,[Measures].[Internet Sales Amount]
+      )
+SELECT
+  {
+    one ,two ,[Measures].[Internet Sales Amount]
+  } ON 0
+ ,(EXISTING
+    (
+      [Date].[Calendar].[Month].MEMBERS
+     ,[Date].[Calendar Year].&[2006]
+    )) ON ROWS
+FROM [Adventure Works];
+
+--sum/aggregate upto specified month for that particular quarter
+with member qtdsample as 
+Aggregate
+(
+QTD([Date].[Calendar].[Month].&[2006]&[5]),[Internet Sales Amount]
+)
+select  {qtdsample, [Internet Sales Amount]} on columns,
+(EXISTING
+    (
+        [Date].[Calendar].[Month].MEMBERS  ,[Date].[Calendar Year].&[2006]
+
+    )) ON ROWS
+ from [Adventure Works];
+ 
+SELECT 
+  {[Measures].[Internet Sales Amount]} ON COLUMNS
+ ,ParallelPeriod
+  (
+    [Date].[Calendar].[Calendar Quarter]   ,1   ,[Date].[Calendar].[Month].&[2006]&[4]
+  ) ON ROWS
+FROM [Adventure Works];
+
+SELECT 
+  {[Measures].[Internet Sales Amount]} ON 1
+ ,{
+    --Current Month 
+    StrToMember
+    ("[Date].[Calendar].[Month].["   +    Format (  Now() - 7 * 365 ,"MMMM yyyy"  )   + "]"
+    )
+    --,StrToMember("[Date].[Calendar].[Month].[" + Format(now()-(7*365), "MMMM yyyy") + "]") 
+   ,ParallelPeriod
+    (
+      [Date].[Calendar].[Month]    ,-1
+    )
+  } ON 0
+FROM [Adventure Works];
+
+select   {[Measures].[Internet Sales Amount]} ON 1,
+existing
+(
+[Date].[Calendar].[Month].members  ,[Date].[Calendar Year].&[2006]
+) on 0
+FROM [Adventure Works];
+ 
+ 
+ SELECT 
+  {[Measures].[Internet Sales Amount]} ON 1
+ ,{
+    /* First Day of the month */
+    Closingperiod
+    (
+    [Date].[Calendar].[Date]  ,StrToMember ("[Date].[Calendar].[Month].["   + 
+	Format (  Now() - 7 * 365  ,"MMMM yyyy"  ) + "]"
+      )
+    )
+  } ON 0
+FROM [Adventure Works];
+
+
+SELECT 
+  {[Measures].[Internet Sales Amount]} ON 1
+ ,{
+    LastPeriods
+    (2
+     ,StrToMember
+      ("[Date].[Calendar].[Month].["
+          + 
+            Format
+            (
+              Now() - 7 * 365
+             ,"MMMM yyyy"
+            )
+        + "]"
+      )
+    )
+  } ON 0
+FROM [Adventure Works];
+
+
+SELECT
+  {[Date].[Calendar Year].[Calendar Year]}*{
+    --[Internet Order Count],
+    [Measures].[Internet Sales Amount]
+  } ON COLUMNS
+ ,Order
+  (
+    [Sales Territory].[Sales Territory Region].MEMBERS
+   ,[Measures].[Internet Sales Amount]
+   ,DESC
+  ) ON ROWS
+FROM [Adventure Works];
+
+
+SELECT
+  {
+  [Date].[Calendar Year].[Calendar Year]*[Date].[Calendar].[Month]}*{
+    --[Internet Order Count],
+    [Measures].[Internet Sales Amount]
+  } ON COLUMNS
+ ,
+ FILTER( 
+
+
+    [Sales Territory].[Sales Territory Region]   ,[Internet Sales Amount] > 500000)  ON ROWS
+FROM [Adventure Works];
+
+
+WITH
+  MEMBER [Internet Order Count 2006] AS
+    (
+      [Measures].[Internet Order Count]
+     ,[Date].[Calendar].[Calendar Year].&[2006]
+    )
+SELECT
+  [Internet Order Count 2006] ON COLUMNS
+ ,[Sales Territory].[Sales Territory Region].MEMBERS ON ROWS
+FROM [Adventure Works];
+
+--non empty
+WITH
+  MEMBER [Internet Order Count 2006] AS
+    (
+      [Measures].[Internet Order Count]
+     ,[Date].[Calendar].[Calendar Year].&[2006]
+    )
+SELECT
+  ( 
+  [Internet Order Count 2006]) ON COLUMNS
+ ,non empty[Sales Territory].[Sales Territory Region].MEMBERS ON ROWS
+FROM [Adventure Works];
+
+
+--nonempty()
+WITH
+  MEMBER [Internet Order Count 2006] AS
+    (
+      [Measures].[Internet Order Count]
+     ,[Date].[Calendar].[Calendar Year].&[2006]
+    )
+SELECT
+  ( 
+  [Internet Order Count 2006]) ON COLUMNS
+ ,nonempty([Sales Territory].[Sales Territory Region].MEMBERS) ON ROWS
+FROM [Adventure Works];
+
+
+WITH SET [2005_2006_Months] AS
+{[Date].[Calendar].[Calendar Year].&[2005].children
+,[Date].[Calendar].[Calendar Year].&[2006].children}
+SELECT [Measures].[Internet Sales Amount] on columns
+      ,ORDER([2005_2006_Months],[Measures].[Internet Sales Amount],BASC) on rows 
+  FROM [Adventure Works]  ;
+  
+  
+  
+SELECT 
+[Customer].[Country].Members * 
+[Customer].[State-Province].Members 
+ON 0, 
+Crossjoin( 
+[Date].[Calendar Year].Members, 
+[Product].[Category].[Category].Members) 
+ON 1 
+FROM [Adventure Works] 
+WHERE Measures.[Internet Sales Amount] ;
+
+//
+//select {[Dim Date].[Date Hierarchy].[Year].members ,[Dim Date].[Date Hierarchy].[Quarter Name].members} on 0 ,
+//{} on 1 from [SalesAnalyticalCube]
+
+--Query Example
+
+
+
+select [Measures].[Internet Sales Amount] on columns,
+[Product].[Product].[Product].members on rows
+from [Adventure Works]
+where {[Date].[Calendar Year].[CY 2007],[Date].[Calendar Year].[CY 2009]}
+
+go
+select  [Measures].[Internet Sales Amount] on columns,
+filter([Product].[Product].[Product].members ,
+[Measures].[Internet Sales Amount]>5000
+)
+on rows
+from [Adventure Works]
+where {[Date].[Calendar Year].[CY 2007]}
+
+go 
+
+select  [Measures].[Internet Sales Amount] on columns,
+filter([Product].[Product].[Product].members ,
+([Measures].[Internet Sales Amount]<19000 and left([Product].[Product].currentmember.name,1)="A")
+)
+on rows
+from [Adventure Works]
+where {[Date].[Calendar Year].[CY 2007]}
+
+go
+
+select  [Measures].[Internet Sales Amount] on columns,
+order([Product].[Product].[Product].members ,[Measures].[Internet Sales Amount],desc)
+on rows
+from [Adventure Works]
+where {[Date].[Calendar Year].[CY 2007]}
