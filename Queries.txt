@@ -1,0 +1,36 @@
+Select [Measures].[Product Sales Cost] on Columns,
+[Dim Customer].[Gender].CHILDREN on Rows
+From [Sales DW];
+-----------------------------------------------------
+SELECT  
+    { [Measures].[Measures].[Dim Customer Count],   
+       [Measures].[Product Sales Cost],[Measures].[Product Actual Cost - Dim Product] } ON 0,  
+    {[Dim Stores].[Store Location] .CHILDREN} ON 1  
+FROM [Sales DW]  ;
+-------------------------------------------------------
+SELECT { [Measures].[Measures].[Dim Customer Count],   
+       [Measures].[Product Sales Cost],[Measures].[Product Actual Cost - Dim Product] } ON COLUMNS,
+CROSSJOIN([Dim Product].[Product Name].CHILDREN,
+[Dim Stores].[Store Location].CHILDREN) ON ROWS
+FROM [Sales DW];
+----------------------------------------------------------
+
+
+Select [Measures].[Sales Amount] on Columns,
+[Dim Product].[English Product Name].children on Rows
+From [Adventure Works DW2008];
+-----------------------------------------------------------
+Select [Measures].[Dim Customer Count] on Columns,
+[Dim Product].[English Product Name].children on Rows
+From [Adventure Works DW2008];
+---------------------------------------------------------------
+Select [Measures].[Dealer Price] on Columns,
+[Dim Product].[English Product Name].children on Rows
+From [Adventure Works DW2008];
+---------------------------------------------------------
+
+SELECT  
+    { [Measures].[Dim Customer Count] } ON COLUMNS,  
+    { [Dim Date].[Fiscal].[Fiscal Year]} ON ROWS  
+FROM [Adventure Works DW2008] ;
+-------------------------------------
