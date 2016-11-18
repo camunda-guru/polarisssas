@@ -1,36 +1,134 @@
+Q1.
 Select [Measures].[Product Sales Cost] on Columns,
 [Dim Customer].[Gender].CHILDREN on Rows
 From [Sales DW];
 -----------------------------------------------------
+Q2.
 SELECT  
     { [Measures].[Measures].[Dim Customer Count],   
        [Measures].[Product Sales Cost],[Measures].[Product Actual Cost - Dim Product] } ON 0,  
     {[Dim Stores].[Store Location] .CHILDREN} ON 1  
 FROM [Sales DW]  ;
 -------------------------------------------------------
+Q3.
 SELECT { [Measures].[Measures].[Dim Customer Count],   
        [Measures].[Product Sales Cost],[Measures].[Product Actual Cost - Dim Product] } ON COLUMNS,
 CROSSJOIN([Dim Product].[Product Name].CHILDREN,
 [Dim Stores].[Store Location].CHILDREN) ON ROWS
 FROM [Sales DW];
 ----------------------------------------------------------
-
-
+Q4.
 Select [Measures].[Sales Amount] on Columns,
 [Dim Product].[English Product Name].children on Rows
 From [Adventure Works DW2008];
 -----------------------------------------------------------
+Q5.
 Select [Measures].[Dim Customer Count] on Columns,
 [Dim Product].[English Product Name].children on Rows
 From [Adventure Works DW2008];
 ---------------------------------------------------------------
+Q6.
 Select [Measures].[Dealer Price] on Columns,
 [Dim Product].[English Product Name].children on Rows
 From [Adventure Works DW2008];
 ---------------------------------------------------------
+Q7.
+Select [Measures].[Dealer Price] on Columns,
+[Dim Product].[English Product Name].children on Rows
+From [Adventure Works DW2008]
+where -{ [Dim Product].[Dealer Price].&[0] }
+-------------------------------------------------------
+Q8.
+SELECT NON EMPTY { [Measures].[Fact Internet Sales Count]
 
-SELECT  
-    { [Measures].[Dim Customer Count] } ON COLUMNS,  
-    { [Dim Date].[Fiscal].[Fiscal Year]} ON ROWS  
-FROM [Adventure Works DW2008] ;
--------------------------------------
+} ON COLUMNS,
+[Dim Date].[Calendar Quarter].[Calendar Quarter] ON ROWS
+
+
+ FROM [Adventure Works DW2008] CELL PROPERTIES VALUE
+-----------------------------------------------------------
+Q9.
+WITH MEMBER MEASURES.IIFDEMO AS
+IIF([Measures].[Sales Amount]>1000
+, "Sales Are High", "Sales Are Low")
+SELECT {[Measures].[Sales Amount],MEASURES.IIFDEMO} ON 0,
+  [Dim Geography].[Country Region Code] .CHILDREN ON 1
+FROM [Adventure Works DW2008] 
+----------------------------------------------------------
+Q10.
+WITH 
+  MEMBER [Measures].[count] AS  
+     CASE  [Measures].[Sales Amount]
+        WHEN 0 THEN "XXX"             
+          ELSE [Measures].[Sales Amount] 
+      END  ,format_string = "#,###,##0"
+SELECT 
+  {
+   [Measures].[count]
+  } ON 0
+ ,{ [Dim Product Category].[English Product Category Name].[English Product Category Name]} ON 1
+FROM [Adventure Works DW2008];
+----------------------------------------------------------------
+Q11.
+SELECT [Measures].MEMBERS ON COLUMNS, [Dim Date].[Fiscal Year].MEMBERS ON ROWS
+ FROM (SELECT [Measures].[Sales Amount] ON COLUMNS, 
+[Dim Date].[Fiscal Year].MEMBERS ON ROWS FROM [Adventure Works DW2008])
+------------------------------------------------------
+Q12.
+Hierarchy Query
+WITH member measures.x as 
+[Dim Product].[Model Name].&[HL Road Tire].Dimension.Members.Count  
+SELECT measures.x on 0,
+[Dim Product].[Model Name].&[HL Road Tire] on 1
+FROM [Adventure Works DW2008]  
+--------------------------------------------------------------
+Q13.
+WITH MEMBER measures.X AS  
+ [Dim Product Category].[English Product Category Name].MEMBERS.Count   
+Select Measures.X ON 0,
+ [Dim Product Category].[English Product Category Name].MEMBERS on 1  
+FROM [Adventure Works DW2008] 
+-----------------------------------------------------------
+Q14.Tuple expressions --- first row from tuples
+
+SELECT {  
+   (  [Measures].[Annual Sales]
+      ,  [Dim Date].[Fiscal Year].&[2003]
+   )  
+, ([Measures].[Annual Sales] 
+      ,[Dim Date].[Fiscal Year].&[2003]  
+   )  
+}.Item(0)  
+ON COLUMNS   
+FROM [Adventure Works DW2008] 
+----------------------------------------------------
+Q15.Scalar Expressions
+
+WITH MEMBER MEASURES.NumericValue AS 10 
+
+MEMBER MEASURES.NumericExpression AS 10 + 10 
+
+MEMBER MEASURES.NumericExpressionBasedOnMeasure AS [Measures].[Internet Sales Amount] + 10 
+
+MEMBER MEASURES.StringValue AS "10" MEMBER 
+
+MEASURES.ConcatenatedString AS "10" + "10" 
+MEMBER MEASURES.StringFunction AS MEASURES.CURRENTMEMBER.NAME 
+MEMBER MEASURES.TodaysDate AS NOW() SELECT
+ {MEASURES.NumericValue,MEASURES.NumericExpression,
+ MEASURES.NumericExpressionBasedOnMeasure, MEASURES.StringValue, 
+ MEASURES.ConcatenatedString, MEASURES.StringFunction, MEASURES.TodaysDate} 
+ ON COLUMNS FROM [Adventure Works DW2008]
+
+-------------------------------------------------------
+Q16.
+Set Expressions
+SELECT   
+     [Dim Geography - Sales Territory].[Sales Territory Key].&[1] :[Dim Geography - Sales Territory].[Sales Territory Key].&[11]
+ON 0 
+FROM [Adventure Works DW2008]  
+--------------------------------------------------------------
+
+
+
+
