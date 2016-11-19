@@ -128,7 +128,147 @@ SELECT
 ON 0 
 FROM [Adventure Works DW2008]  
 --------------------------------------------------------------
+Q17. Non empty test
 
+WITH
+MEMBER MEASURES.CategoryCount AS
+COUNT([Dim Product].[English Product Name].[English Product Name].MEMBERS)
+MEMBER MEASURES.NonEmptyCategoryCountFor2001 AS
+COUNT(
+NONEMPTY(
+[Dim Product].[English Product Name].CHILDREN,([Dim Date].[Fiscal Year].&[2002], [Measures].[Tax Amt])
 
+))
+SELECT
+{MEASURES.CategoryCount,MEASURES.NonEmptyCategoryCountFor2001 }
+ON COLUMNS
+FROM [Adventure Works DW2008]
+---------------------------------------------------------------------
+Q20.Comparison operator
 
+With Member [Measures].[LowGPM] as  
+  IIF(  
+      [Measures].[Profit Margin] <= .5,  
+      [Measures].[Profit Margin],  
+      null)  
+SELECT   
+NON EMPTY [Dim Geography - Sales Territory].[Sales Territory Key].&[4] ON 0,  
+    NON EMPTY [Dim Product Category].[English Product Category Name].Members ON 1  
+FROM  
+    [Adventure Works DW2008]  
+WHERE  
+    ([Measures].[LowGPM])  
+-----------------------------------------------------------------
+Q21.
+-- This query returns the gross profit margin (GPM)  
+-- for Australia where the GPM is less than or equal to 30%.  
+With Member [Measures].[LowGPM] as  
+  IIF(  
+      [Measures].[Profit Margin] <= .3 AND   
+      [Measures].[Profit Margin] >= .2,  
+      [Measures].[Profit Margin],  
+      null)  
+SELECT   
+NON EMPTY [Dim Geography - Sales Territory].[Sales Territory Key].&[4] ON 0,  
+    NON EMPTY [Dim Product Category].[English Product Category Name].Members ON 1  
+FROM  
+    [Adventure Works DW2008]  
+WHERE  
+    ([Measures].[LowGPM])  
+---------------------------------------------------------------------
+Q22.Single comment Query
+
+SELECT   
+    [Dim Date].[Fiscal Year].Members *  
+      [Dim Reseller].[Reseller Key].Children ON 0,  
+    [Dim Product Category].[English Product Category Name].Members ON 1  
+FROM -- Select from the Adventure Works cube.  
+    [Adventure Works DW2008]  
+WHERE  
+    [Measures].[Profit Margin] 
+---------------------------------------------------------------
+Q23.
+-- This member returns the gross profit margin for product types  
+-- and reseller types crossjoined by year.  
+SELECT   
+    [Dim Date].[Fiscal Year].Members *  
+      [Dim Reseller].[Reseller Key].Children ON 0,  
+    [Dim Product Category].[English Product Category Name].Members ON 1  
+FROM /* Select from the Adventure Works cube.*/  
+    [Adventure Works DW2008]  
+WHERE  
+    [Measures].[Profit Margin]   
+-----------------------------------------------------------------
+Q24.Union Operation
+-- This member returns the gross profit margin for each year for North American countries.  
+SELECT   
+    [Dim Date].[Fiscal Year].Members ON 0,  
+    {[Dim Geography - Sales Territory].[Sales Territory Key].&[1]} +  
+     {[Dim Geography - Sales Territory].[Sales Territory Key].&[2]}+
+	 {[Dim Geography - Sales Territory].[Sales Territory Key].&[3]} ON 1  
+FROM  
+    [Adventure Works DW2008]  
+WHERE  
+    ([Measures].[Profit Margin])  
+------------------------------------------------------------------
+Q25.String concatenate
+SELECT {StrToMember("[Measures].[Sales "+ "Amount]")} ON COLUMNS,
+ StrToSet("{ [Dim Product Category].[English Product Category Name].&[Accessories], 
+ [Dim Product Category].[English Product Category Name].&[Bikes],
+  [Dim Product Category].[English Product Category Name].&[Clothing], 
+ [Dim Product Category].[English Product Category Name].&[Components], 
+ [Dim Product Category].[English Product Category Name].[All].UNKNOWNMEMBER }") ON ROWS FROM [Adventure Works DW2008]
+------------------------------------------------------------------
+Q26. Cross Join
+SELECT 
+
+[Measures].MEMBERS ON Columns, 
+
+Crossjoin( [DIm Date].[Fiscal Year].MEMBERS, 
+[Dim Product Category].[English Product Category Name].MEMBERS) ON Rows 
+FROM [Adventure Works DW2008]
+----------------------------------------------------------------
+Q27.
+SELECT [Measures].[Sales Amount] ON Columns,
+ 
+  ORDER( DESCENDANTS( [Dim Geography].[English Country Region Name]) , 
+  [Measures].[Sales Amount], BDESC) ON Rows FROM [Adventure Works DW2008]
+
+--------------------------------------------------------------
+Q28.Aggregate functions
+
+WITH member [dim date].[fiscal year].[2001 and 2004] AS  'AGGREGATE({[dim date].[fiscal year].[2001],  [dim date].[fiscal year].[2004]})'  SELECT {[dim date].[fiscal year].[2001 and 2004],  [dim date].[fiscal year].[cy 2001],  [dim date].[fiscal year].[cy 2004]} ON COLUMNS,  {measures.[order quantity]} ON ROWS  FROM [adventure works DW2008]
+--------------------------------------------------------------
+Q29.
+WITH member [Dim Product Category].[English Product Category Name].[average Bikes sales] AS  'AVG({[Dim Product Category].[English Product Category Name].&[Bikes]})'  SELECT {  [Dim Product Category].[English Product Category Name].[average Bikes sales]} ON COLUMNS  FROM [Adventure Works DW2008]  WHERE ([measures].[sales amount])
+---------------------------------------------------------------
+Q30.DrillDown Query
+
+SELECT DRILLDOWNLEVEL({[Dim Product Category].[English Product Category Name]} * 
+{[Dim Geography].[English Country Region Name].CHILDREN}) ON COLUMNS  
+FROM [Adventure Works DW2008] WHERE ([measures].[sales amount]) 
+------------------------------------------------------------------
+
+Q31.
+SELECT [Measures].[Internet Sales Amount] ON COLUMNS,  
+   NON EMPTY (  
+   DRILLDOWNLEVEL(  
+       {[Customer].[Customer Geography].[Country].[United States],  
+           DESCENDANTS(  
+             { [Customer].[Customer Geography].[State-Province].[Washington],    
+               [Customer].[Customer Geography].[State-Province].[Oregon]},   
+               [Customer].[Customer Geography].[City]) } ,  
+[Customer].[Customer Geography].[City] ) )  ON ROWS  
+FROM [Adventure Works]  
+
+-----------------------------------------------------------------
+Q31 First Sibling
+SELECT [Date].[Fiscal].[Fiscal Year].&[2003].FirstSibling ON 0 FROM [Adventure Works]
+-----------------------------------------------------------------
+Q32 Intersect
+SELECT INTERSECT( {[Date].[Calendar Year].&[2001], [Date].[Calendar Year].&[2002],[Date].[Calendar Year].&[2003]} , {[Date].[Calendar Year].&[2002],[Date].[Calendar Year].&[2003], [Date].[Calendar Year].&[2004]}) ON 0 FROM [Adventure Works]
+-----------------------------------------------------------------
+Q33. Median
+WITH MEMBER Measures.x AS Median ([Date].[Calendar].CurrentMember.Children , [Measures].[Reseller Order Quantity] ) SELECT Measures.x ON 0 ,NON EMPTY [Date].[Calendar].[Calendar Quarter]* [Product].[Product Categories].[Subcategory].members * [Geography].[Geography].[Country].Members ON 1 FROM [Adventure Works]
+---------------------------------------------------------------
 
